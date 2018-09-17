@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/testItem"
+        android:title="测试"
+        android:icon="@drawable/itemtest"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/renameItem"
+        android:title="重命名"
+        android:icon="@drawable/itemrename"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/removeItem"
+        android:title="删除"
+        android:icon="@drawable/itemremove"
+        app:showAsAction="never"/>
+</menu>

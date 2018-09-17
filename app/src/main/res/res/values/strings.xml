@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">Nystagmus</string>
+    <string name="app_name_zh">眼震仪</string>
+    <string name="defalut">-</string>
+    <string name="normal">正常</string>
+    <string name="abnormal">中枢病变</string>
+    <string name="left">左向</string>
+    <string name="right">右向</string>
+    <string name="website">www.hit.edu.cn</string>
+    <string name="HIT">哈尔滨工业大学</string>
+    <string name="navigation_drawer_open">open</string>
+    <string name="navigation_drawer_close">close</string>
+    <string name="title_activity_introduce">哈尔滨工业大学</string>
+    <string name="action_settings">Settings</string>
+    <string name="label_settings">设置</string>
+    <string name="laber_address_settings">网络地址设置：</string>
+    <string name="label_camera_address_button">更新地址</string>
+    <string name="label_camera_address_left_indicate">左眼摄像头网络地址</string>
+    <string name="label_camera_address_right_indicate">右眼摄像头网络地址</string>
+    <string name="label_camera_address_OK">完成</string>
+    <string name="label_defalut">恢复默认</string>
+    <string name="label_recognition_settings">图像识别参数设置：</string>
+    <string name="label_recognition_gray_value">图像识别灰度值（范围：1-255）</string>
+    <string name="label_recognition_parameter_button">更新参数</string>
+    <string name="label_clear_cache">清除缓存</string>
+    <string name="label_input_error">输入有误</string>
+    <string name="label_video_list">视频列表</string>
+
+    <string name="large_text">\u3000\u3000哈尔滨工业大学（简称哈工大）隶属于工业和信息化部，是首批进入国家“211工程”和“985工程”建设的若干所大学之一。\r\n\r\n
+    \u3000\u3000多年来，哈尔滨工业大学始终保持航天特色，坚持自主创新，不断主动承接国家高、精、尖大型科技项目，科研实力始终位居全国高校前列。\r\n\r\n
+    \u3000\u3000回首哈工大的发展历程，她的每一轮进步跨越、每一次腾飞奋进，无不与祖国的命运紧紧连在一起。
+        今天的哈尔滨工业大学站在一个新的历史起点上，将努力走出一条中国特色、世界一流、哈工大规格的办学之路，为中华民族伟大复兴、人类文明进步做出新的更大贡献！\r\n</string>
+</resources>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="180dp"
+
+    android:background="@drawable/keyguard">
+    <ImageView
+        android:id="@+id/icon_image"
+        android:layout_width="70dp"
+        android:layout_height="70dp"
+        android:src="@mipmap/logo"
+        android:layout_centerInParent="true"/>
+    <TextView
+        android:id="@+id/website"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:text="@string/website"
+        android:textSize="14sp"
+        android:textColor="@color/dimgray"
+        android:layout_marginLeft="10dp"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/HIT"
+        android:textColor="@color/dimgray"
+        android:textSize="14sp"
+        android:layout_above="@id/website"
+        android:paddingBottom="5dp"
+        android:layout_marginLeft="10dp"/>
+
+
+</RelativeLayout>
