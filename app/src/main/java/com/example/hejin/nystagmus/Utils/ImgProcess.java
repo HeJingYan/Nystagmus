@@ -11,7 +11,6 @@ import org.bytedeco.javacpp.opencv_core.CvSeq;
 import org.bytedeco.javacpp.opencv_core.IplImage;
 import org.bytedeco.javacpp.opencv_core.Mat;
 import org.bytedeco.javacpp.opencv_core.Point;
-import org.bytedeco.javacpp.opencv_core.Rect;
 import org.bytedeco.javacpp.opencv_core.Scalar;
 import org.bytedeco.javacpp.opencv_core.Size;
 import org.bytedeco.javacpp.opencv_imgproc;
@@ -81,11 +80,15 @@ public class ImgProcess {
      * @param image
      * @return
      */
+
     private Mat CropImage(Mat image)
     {
-        Rect box = new Rect(image.cols()/4, image.rows()/5, image.cols()/2, image.rows()*3/5);
+        opencv_core.Rect box = new opencv_core.Rect(image.cols()/4, image.rows()/5, image.cols()/2, image.rows()*3/5);
         return new Mat(image,box);
     }
+
+
+
     /**
      * 滤波、灰度化等处理，返回图像便于边缘检测
      * @param grayimg0 源图像

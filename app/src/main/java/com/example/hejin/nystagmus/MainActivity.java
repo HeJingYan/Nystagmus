@@ -38,6 +38,7 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 
+import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacpp.opencv_core.Mat;
 import org.bytedeco.javacpp.opencv_core.Rect;
 import org.bytedeco.javacv.AndroidFrameConverter;
@@ -52,6 +53,18 @@ import java.util.ArrayList;
 
 import static com.example.hejin.nystagmus.Utils.Calculate.MergeRealtimeAndMax;
 import static com.example.hejin.nystagmus.Utils.Calculate.getPeriod;
+import static org.bytedeco.javacpp.opencv_core.CV_32FC1;
+import static org.bytedeco.javacpp.opencv_core.cvCloneImage;
+import static org.bytedeco.javacpp.opencv_core.cvCreateImage;
+import static org.bytedeco.javacpp.opencv_core.cvCreateMat;
+import static org.bytedeco.javacpp.opencv_core.cvGetSize;
+import static org.bytedeco.javacpp.opencv_core.cvReleaseImage;
+import static org.bytedeco.javacpp.opencv_core.cvReleaseMat;
+import static org.bytedeco.javacpp.opencv_core.cvScalarAll;
+import static org.bytedeco.javacpp.opencv_imgproc.CV_INTER_CUBIC;
+import static org.bytedeco.javacpp.opencv_imgproc.CV_WARP_FILL_OUTLIERS;
+import static org.bytedeco.javacpp.opencv_imgproc.cv2DRotationMatrix;
+import static org.bytedeco.javacpp.opencv_imgproc.cvWarpAffine;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
@@ -629,9 +642,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
                 else
                 {
-                    //网络单眼视频
-                    frameMat=matConverter.convertToMat(frame);
+
+                    if(eye)
+                    {
+                        //网络左眼视频
+                        frameMat = matConverter.convertToMat(frame);
+                        frameMat = rotate(frameMat,0 );
+
+                    }
+                    else
+                    {
+
+                        //网络右眼视频
+                        frameMat = matConverter.convertToMat(frame);
+                        frameMat = rotate(frameMat,0 );
+                    }
+
                 }
+
                 if(isTest)
                 {
                     this.frameNum++;
@@ -834,6 +862,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             add_chart.notifyDataSetChanged();
             add_chart.invalidate();
         }
+
+        private Mat rotate(Mat image, double angle) {
+            opencv_core.IplImage Image = new opencv_core.IplImage(image);
+            opencv_core.IplImage copy = cvCloneImage(Image);
+            opencv_core.IplImage rotatedImage = cvCreateImage(cvGetSize(copy), copy.depth(), copy.nChannels());
+            //Define Rotational Matrix
+            opencv_core.CvMat mapMatrix = cvCreateMat(2, 3, CV_32FC1);
+            //Define Mid Point
+            opencv_core.CvPoint2D32f centerPoint = new opencv_core.CvPoint2D32f();
+            centerPoint.x(copy.width() / 2);
+            centerPoint.y(copy.height() / 2);
+            //Get Rotational Matrix
+            cv2DRotationMatrix(centerPoint, angle, 1.0, mapMatrix);
+            //Rotate the Image
+            cvWarpAffine(copy, rotatedImage, mapMatrix, CV_INTER_CUBIC + CV_WARP_FILL_OUTLIERS, cvScalarAll(170));
+            cvReleaseImage(copy);
+            cvReleaseMat(mapMatrix);
+            Mat rotateImage = new Mat(rotatedImage);
+            return rotateImage;
+        }
+
     }
 
 }
