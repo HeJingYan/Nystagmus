@@ -68,19 +68,20 @@ import static org.bytedeco.javacpp.opencv_imgproc.cvWarpAffine;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
-    private ImageView imageView_leye;
-    private ImageView imageView_reye;
-    private DrawerLayout mDrawerLayout;
-    private static final int OPEN_VIDEO=1;
+    private ImageView imageView_leye;//右眼显示窗口
+    private ImageView imageView_reye;//左眼显示窗口
+    private DrawerLayout mDrawerLayout;//侧滑栏
+    private static final int OPEN_VIDEO=1;//打开本地视频的码号，用于Intent活动传输
     private static final int OPEN_CAMERA=2;
     private static final int Storage_RequestCode=1;//存储权限申请码
+    //private FFmpegFrameRecorder recorder;//用于记录视频
 
     private LineChart chart_x;//X波形图
     private LineChart chart_y;//y波形图
-    private LineChart chart_rotation;//旋转图
+    private LineChart chart_rotation;//旋转波形
     private int[] colors=new int[]{Color.rgb(255, 69, 0), Color.rgb(0, 128, 0)};//自定义颜色，第一种为橘黄色，第二种为纯绿色
 
-    private SharedPreferences pref;//调用存储文件
+    private SharedPreferences pref;//调用存储文件，用于保存一些设置的参数
 
 
     /*SPV相关*/
@@ -88,14 +89,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextView ReyeXRealtimeAndMaxSPV;
     private TextView LeyeYRealtimeAndMaxSPV;
     private TextView ReyeYRealtimeAndMaxSPV;
-    private TextView LeyeHighperiod;
-    private TextView ReyeHighperiod;
+    private TextView LeyeHighperiod;//左眼最大反应期
+    private TextView ReyeHighperiod;//右眼最大反应期
     private DecimalFormat df;//数据格式,double转string保留两位小数
 
     /*诊断相关*/
     private TextView DiagnosticResult;
-    private TextView LeyeDirectionResult;
-    private TextView ReyeDirectionResult;
+    private TextView LeyeDirectionResult;//左眼眼震方向
+    private TextView ReyeDirectionResult;//右眼眼震方向
 
     /*悬浮菜单按钮*/
     private FloatingActionsMenu menuChange;
@@ -103,7 +104,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private VideoTask task_leye;//左眼任务
     private VideoTask task_reye;//右眼任务
 
-    @Override
+    @Override//活动启动时第一个启动的函数，用于定义并初始化部分参数
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -139,11 +140,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Toolbar toolbar=(Toolbar)findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, mDrawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, mDrawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);//侧滑栏设置
         mDrawerLayout.setDrawerListener(toggle);
         toggle.syncState();
 
-        if(Build.VERSION.SDK_INT>= Build.VERSION_CODES.LOLLIPOP)
+        if(Build.VERSION.SDK_INT>= Build.VERSION_CODES.LOLLIPOP)//状态栏设置
         {
             //大于安卓5.0即API21版本可用
             //导航栏颜色与状态栏统一
@@ -218,53 +219,57 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         initialChart(chart_rotation,"旋转曲线");//初始化旋转曲线
 
         pref=getSharedPreferences("CameraAddress",MODE_PRIVATE);
-        Tool.AddressLeftEye=pref.getString("LeftCameraAddress",Tool.AddressLeftEye);
-        Tool.AddressRightEye=pref.getString("RightCameraAddress",Tool.AddressRightEye);
-        Tool.RecognitionGrayValue=pref.getInt("GrayValue",Tool.RecognitionGrayValue);
+        Tool.AddressLeftEye=pref.getString("LeftCameraAddress",Tool.AddressLeftEye);//保存左眼摄像头地址
+        Tool.AddressRightEye=pref.getString("RightCameraAddress",Tool.AddressRightEye);//保存右眼摄像头地址
+        Tool.RecognitionGrayValue=pref.getInt("GrayValue",Tool.RecognitionGrayValue);//保存灰度化阈值
 
         L.d("项目打开");
     }
-    @Override
-    public void onBackPressed()
+
+    @Override//APP活动放入后台时启动
+    public void onBackPressed()//此方法用来监听back键事件的
     {
         //拦截Back键，使App进入后台而不是关闭
         Intent launcherIntent=new Intent(Intent.ACTION_MAIN);
         launcherIntent.addCategory(Intent.CATEGORY_HOME);
         startActivity(launcherIntent);
     }
-    @Override
+
+    @Override//悬浮按钮点击函数
     public void onClick(View v)
     {
         switch (v.getId())
         {
-            case R.id.menu_openvideo:
+            case R.id.menu_openvideo://打开本地视频
             {
+                //先申请存储权限 判断现在是否有存储权限 没有的话申请权限
                 if(ContextCompat.checkSelfPermission(MainActivity.this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED)
                 {
                     ActivityCompat.requestPermissions(MainActivity.this,new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE},Storage_RequestCode);
-                }else
+                }else//有权限直接打开视频
                 {
+                    //打开本地视频
                     openVideo();
                 }
-                menuChange.collapse();
+                menuChange.collapse();//关闭悬浮栏
                 break;
             }
-            case R.id.menu_opencamera:
+            case R.id.menu_opencamera://打开摄像头
             {
                 openCamera();
-                menuChange.collapse();
+                menuChange.collapse();//关闭悬浮栏
                 break;
             }
-            case R.id.menu_startplay:
+            case R.id.menu_startplay://开始测试
             {
                 startPlay();
-                menuChange.collapse();
+                menuChange.collapse();//关闭悬浮栏
                 break;
             }
-            case R.id.menu_stopplay:
+            case R.id.menu_stopplay://停止测试
             {
                 stopPlay();
-                menuChange.collapse();
+                menuChange.collapse();//关闭悬浮栏
                 break;
             }
             default:
@@ -273,12 +278,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
     }
-    @Override
+
+    @Override//申请权限
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
     {
         switch (requestCode)
         {
-            case Storage_RequestCode:
+            case Storage_RequestCode://存储权限
                 if(grantResults.length>0&&grantResults[0]== PackageManager.PERMISSION_GRANTED)
                 {
                     /*申请权限后的事情*/
@@ -294,8 +300,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
         }
     }
-    private void openCamera()
+
+    private void openCamera()//打开摄像头
     {
+        //判断上次处理过程是否结束 没结束时结束
         if(task_leye!=null&&task_leye.getStatus()== AsyncTask.Status.RUNNING)
         {
             task_leye.cancel(true);
@@ -307,11 +315,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         task_leye=new VideoTask(this,true);//注意不是本地视频
         task_reye=new VideoTask(this,false);
+
         //开始执行
         task_leye.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,Tool.AddressLeftEye);
         task_reye.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,Tool.AddressRightEye);
     }
-    private void openVideo()
+
+    private void openVideo()//打开视频
     {
         if(task_leye!=null&&task_leye.getStatus()== AsyncTask.Status.RUNNING)
         {
@@ -321,12 +331,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         {
             task_reye.cancel(true);
         }
+        //打开本地的视频资源 选取视频
         Intent intent=new Intent("android.intent.action.GET_CONTENT");
         intent.setType("video/*");
         intent.addCategory(Intent.CATEGORY_OPENABLE);//和GET_CONTENT一起用
         startActivityForResult(intent,OPEN_VIDEO);
     }
-    private void startPlay()
+
+    private void startPlay()//开始测试
     {
         if(task_leye!=null&&task_leye.getStatus()== AsyncTask.Status.RUNNING)
         {
@@ -337,7 +349,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             task_reye.isTest=true;
         }
     }
-    private void stopPlay()
+
+    private void stopPlay()//停止测试
     {
         if(task_leye!=null&&task_leye.getStatus()== AsyncTask.Status.RUNNING)
         {
@@ -348,7 +361,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             task_reye.cancel(true);
         }
     }
-    private void initialChart(LineChart chart,String label)
+
+    private void initialChart(LineChart chart,String label)//初始化波形图
     {
         Description description=new Description();
         description.setText(label);
@@ -395,7 +409,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (requestCode)
         {
 
-            case Tool.VideoTransmitTestCode:
+            case Tool.VideoTransmitTestCode: //长按视频列表 可以选择处理视频
             {
                 if(resultCode==RESULT_OK)
                 {
@@ -405,7 +419,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     mDrawerLayout.closeDrawers();//关闭侧滑栏
                 }
             }
-            case OPEN_VIDEO:
+            case OPEN_VIDEO: //选择打开视频
             {
                 if(resultCode==RESULT_OK)
                 {
@@ -416,6 +430,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     //视频文件地址为：/storage/emulated/0/test.mp4
                     //视频文件必须为mjpeg编码的video
 
+                    //定义新建初始化
                     task_leye=new VideoTask(this,true,true);//注意是本地视频
                     task_reye=new VideoTask(this,false,true);
                     //开始执行
@@ -438,8 +453,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         private boolean eye;//true为左眼，false为右眼
         private String eyeInfo;
         //用于格式转换
-        private AndroidFrameConverter bitmapConverter=new AndroidFrameConverter();
-        private OpenCVFrameConverter.ToIplImage matConverter=new OpenCVFrameConverter.ToIplImage();
+        private AndroidFrameConverter bitmapConverter=new AndroidFrameConverter();//Frame转bitmap
+        private OpenCVFrameConverter.ToIplImage matConverter=new OpenCVFrameConverter.ToIplImage();//Mat转Frame
         //用于显示
         private Mat mat_display=null;
         private Frame frame_display=null;
@@ -472,21 +487,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //瞳孔圆心数据计算
         private Calculate calculate=new Calculate();//保证计算过程在同一个线程内，即在UI主线程内。
 
-
-        public VideoTask(MainActivity activity,boolean eye,boolean isLocalVideo) {
+        //构造函数，用于定义调用的格式
+        public VideoTask(MainActivity activity,boolean eye,boolean isLocalVideo)
+        {
             this.eye=eye;
             this.mActivity=new WeakReference<>(activity);
             this.activity=this.mActivity.get();
             this.eyeInfo=eye?"左眼":"右眼";
             this.isLocalVideo=isLocalVideo;
         }
+        //构造函数
         public VideoTask(MainActivity activity,boolean eye)
         {
             this(activity,eye,false);
         }
 
-        //此方法在主线程中执行，在异步任务执行之前，此方法会被调用，一般用于一些准备工作
-        //主要做一些波形初始化等操作
+        //onPreExecute()方法在主线程UI Thread当中执行，在执行异步任务之前的时候执行
+        //通常在这个方法里做一些UI控件的初始化的操作，这里做波形初始化等操作
         @Override
         protected void onPreExecute() {
             //参数初始化
@@ -511,15 +528,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             DiagnosticResult.setTextColor(MainActivity.this.getResources().getColor(R.color.black));
         }
 
-        //此方法在主线程中执行，在doInBackground方法执行完成以后此方法会被调用
+        //此方法在主线程中执行，在doInBackground方法执行完成以后此方法会在UI Thread中被调用
+        //onPostExecute 当异步任务执行完之后，将结果返回给这个方法，将返回结果显示在UI控件上
         @Override
-        protected void onPostExecute(String s) {
+        protected void onPostExecute(String s)
+        {
             stopVideo();
         }
 
         //此方法在主线程中执行，当任务被取消后执行
         @Override
-        protected void onCancelled(String s) {
+        protected void onCancelled(String s)
+        {
             stopVideo();
         }
 
@@ -590,7 +610,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             T.showShort(this.activity,"视频播放结束");
         }
 
-        //此方法在子线程中执行，用于执行异步任务,注意这里的params就是AsyncTask的第一个参数类型。
+        //此方法在子线程中执行，在onPreExecute()方法执行后马上执行，用于执行异步任务,注意这里的params就是AsyncTask的第一个参数类型。
         //在此方法中可以通过调用publicProgress方法来更新任务进度，publicProgress会调用onProgressUpdate方法。
         @Override
         protected String doInBackground(String... strings) {
@@ -828,6 +848,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
             */
         }
+
+        //清除波形
         private void clearEntey(LineChart chart)
         {
             LineData oldData=chart.getData();
@@ -852,6 +874,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             chart.notifyDataSetChanged();
         }
 
+        //绘制波形
         private void addEntey(LineChart add_chart,float add_x,float add_y,int add_flag)
         {
             //一定保证运行在UI主线程下
@@ -863,6 +886,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             add_chart.invalidate();
         }
 
+        //2018/09/29 增加图像旋转功能
         private Mat rotate(Mat image, double angle) {
             opencv_core.IplImage Image = new opencv_core.IplImage(image);
             opencv_core.IplImage copy = cvCloneImage(Image);
@@ -882,7 +906,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Mat rotateImage = new Mat(rotatedImage);
             return rotateImage;
         }
-
     }
 
 }
