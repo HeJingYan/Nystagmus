@@ -58,8 +58,8 @@ public class ImgProcess {
      */
     public void Start(Mat eye, double eyeratio)
     {
-        eye=CropImage(eye);
-        opencv_core.flip(eye,eye,1);//水平翻转
+        //eye=CropImage(eye);
+        //opencv_core.flip(eye,eye,1);//水平翻转
         this.eye=new Mat(eye);
         EyeRatio=eyeratio;
         eyeImage=new IplImage(eye);
@@ -74,20 +74,6 @@ public class ImgProcess {
     {
         return eye;
     }
-
-    /**
-     * 截取图像
-     * @param image
-     * @return
-     */
-
-    private Mat CropImage(Mat image)
-    {
-        opencv_core.Rect box = new opencv_core.Rect(image.cols()/4, image.rows()/5, image.cols()/2, image.rows()*3/5);
-        return new Mat(image,box);
-    }
-
-
 
     /**
      * 滤波、灰度化等处理，返回图像便于边缘检测

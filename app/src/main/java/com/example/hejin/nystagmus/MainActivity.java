@@ -668,6 +668,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         //网络左眼视频
                         frameMat = matConverter.convertToMat(frame);
                         frameMat = rotate(frameMat,0 );
+                        frameMat = CropImage(frameMat);//截取矩形
+                        opencv_core.flip(frameMat,frameMat,1);//水平翻转
 
                     }
                     else
@@ -676,6 +678,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         //网络右眼视频
                         frameMat = matConverter.convertToMat(frame);
                         frameMat = rotate(frameMat,0 );
+                        frameMat = CropImage(frameMat);//截取矩形
+                        opencv_core.flip(frameMat,frameMat,1);//水平翻转
                     }
 
                 }
@@ -906,6 +910,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Mat rotateImage = new Mat(rotatedImage);
             return rotateImage;
         }
+
+        /**
+         * 截取图像
+         * @param image
+         * @return
+         */
+        private Mat CropImage(Mat image)
+        {
+            opencv_core.Rect box = new opencv_core.Rect(image.cols()/4, image.rows()/5, image.cols()/2, image.rows()*3/5);
+            return new Mat(image,box);
+        }
+
     }
 
 }
