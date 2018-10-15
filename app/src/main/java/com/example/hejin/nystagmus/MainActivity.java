@@ -447,18 +447,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     //视频任务
-    private class VideoTask extends AsyncTask<String,Object,String>
-    {
+    private class VideoTask extends AsyncTask<String,Object,String> {
         //用于表示眼睛
         private boolean eye;//true为左眼，false为右眼
         private String eyeInfo;
         //用于格式转换
-        private AndroidFrameConverter bitmapConverter=new AndroidFrameConverter();//Frame转bitmap
-        private OpenCVFrameConverter.ToIplImage matConverter=new OpenCVFrameConverter.ToIplImage();//Mat转Frame
+        private AndroidFrameConverter bitmapConverter = new AndroidFrameConverter();//Frame转bitmap
+        private OpenCVFrameConverter.ToIplImage matConverter = new OpenCVFrameConverter.ToIplImage();//Mat转Frame
         //用于显示
-        private Mat mat_display=null;
-        private Frame frame_display=null;
-        private Bitmap bitmap_display=null;
+        private Mat mat_display = null;
+        private Frame frame_display = null;
+        private Bitmap bitmap_display = null;
         //视频源
         private String cameraAddress;
         private FFmpegFrameGrabber capture;
@@ -472,34 +471,33 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         private Mat frameMat;
         private Mat eyeMat;
         //视频相关参数
-        private int frameNum=0;//帧数
-        private double rate=0;//帧速率
-        private int secondTime=0;//测试时间（秒）
+        private int frameNum = 0;//帧数
+        private double rate = 0;//帧速率
+        private int secondTime = 0;//测试时间（秒）
         //是否开始测试
-        private boolean isTest=false;
+        private boolean isTest = false;
         //滤波
-        private PointFilter filter=new PointFilter();
+        private PointFilter filter = new PointFilter();
         //与上一帧做比较
         private Box preEyeBox;
         //初始圆心坐标值
-        private boolean isEyeCenter=false;
-        private Box eyeCenter=new Box();
+        private boolean isEyeCenter = false;
+        private Box eyeCenter = new Box();
         //瞳孔圆心数据计算
-        private Calculate calculate=new Calculate();//保证计算过程在同一个线程内，即在UI主线程内。
+        private Calculate calculate = new Calculate();//保证计算过程在同一个线程内，即在UI主线程内。
 
         //构造函数，用于定义调用的格式
-        public VideoTask(MainActivity activity,boolean eye,boolean isLocalVideo)
-        {
-            this.eye=eye;
-            this.mActivity=new WeakReference<>(activity);
-            this.activity=this.mActivity.get();
-            this.eyeInfo=eye?"左眼":"右眼";
-            this.isLocalVideo=isLocalVideo;
+        public VideoTask(MainActivity activity, boolean eye, boolean isLocalVideo) {
+            this.eye = eye;
+            this.mActivity = new WeakReference<>(activity);
+            this.activity = this.mActivity.get();
+            this.eyeInfo = eye ? "左眼" : "右眼";
+            this.isLocalVideo = isLocalVideo;
         }
+
         //构造函数
-        public VideoTask(MainActivity activity,boolean eye)
-        {
-            this(activity,eye,false);
+        public VideoTask(MainActivity activity, boolean eye) {
+            this(activity, eye, false);
         }
 
         //onPreExecute()方法在主线程UI Thread当中执行，在执行异步任务之前的时候执行
@@ -507,11 +505,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         protected void onPreExecute() {
             //参数初始化
-            this.isTest=false;
-            this.frameNum=0;
-            this.secondTime=0;
-            this.isEyeCenter=false;
-            this.preEyeBox=null;
+            this.isTest = false;
+            this.frameNum = 0;
+            this.secondTime = 0;
+            this.isEyeCenter = false;
+            this.preEyeBox = null;
             //界面初始化
             clearEntey(chart_x);
             clearEntey(chart_y);
@@ -531,35 +529,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //此方法在主线程中执行，在doInBackground方法执行完成以后此方法会在UI Thread中被调用
         //onPostExecute 当异步任务执行完之后，将结果返回给这个方法，将返回结果显示在UI控件上
         @Override
-        protected void onPostExecute(String s)
-        {
+        protected void onPostExecute(String s) {
             stopVideo();
         }
 
         //此方法在主线程中执行，当任务被取消后执行
         @Override
-        protected void onCancelled(String s)
-        {
+        protected void onCancelled(String s) {
             stopVideo();
         }
 
         private void stopVideo()//视频结束流程
         {
-            this.isTest=false;
+            this.isTest = false;
             //诊断结果
-            boolean diagnosticResult=calculate.judgeDiagnosis();//诊断结果
-            String preResultStr=DiagnosticResult.getText().toString();
-            boolean preResult=preResultStr.equals(this.activity.getResources().getString(R.string.abnormal));
+            boolean diagnosticResult = calculate.judgeDiagnosis();//诊断结果
+            String preResultStr = DiagnosticResult.getText().toString();
+            boolean preResult = preResultStr.equals(this.activity.getResources().getString(R.string.abnormal));
 
             //为了展示所加 2018/08/27
-            if(this.isLocalVideo)
-            {
+            if (this.isLocalVideo) {
                 //本地视频的话显示不正常
                 DiagnosticResult.setText(R.string.abnormal);
                 DiagnosticResult.setTextColor(this.activity.getResources().getColor(R.color.red));
-            }
-            else
-            {
+            } else {
                 //在线视频的话就显示正常
                 DiagnosticResult.setText(R.string.normal);
                 DiagnosticResult.setTextColor(this.activity.getResources().getColor(R.color.black));
@@ -580,231 +573,198 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
             */
             //快相方向
-            if(calculate.judegeEye())
-            {
-                boolean eyeDir=calculate.judgeFastPhase();//眼睛快相方向
-                if(eye)
-                {
+            if (calculate.judegeEye()) {
+                boolean eyeDir = calculate.judgeFastPhase();//眼睛快相方向
+                if (eye) {
                     //左眼
-                    LeyeDirectionResult.setText(eyeDir?R.string.left:R.string.right);
-                }
-                else
-                {
+                    LeyeDirectionResult.setText(eyeDir ? R.string.left : R.string.right);
+                } else {
                     //右眼
-                    ReyeDirectionResult.setText(eyeDir?R.string.left:R.string.right);
+                    ReyeDirectionResult.setText(eyeDir ? R.string.left : R.string.right);
                 }
             }
-            if(isLocalVideo)
-            {
+            if (isLocalVideo) {
                 //在本地视频情况下，释放视频源
-                try
-                {
+                try {
                     this.capture.release();
-                }
-                catch (FrameGrabber.Exception e)
-                {
+                } catch (FrameGrabber.Exception e) {
                     L.d("释放本地资源");
                 }
 
             }
-            T.showShort(this.activity,"视频播放结束");
+            T.showShort(this.activity, "视频播放结束");
         }
 
         //此方法在子线程中执行，在onPreExecute()方法执行后马上执行，用于执行异步任务,注意这里的params就是AsyncTask的第一个参数类型。
         //在此方法中可以通过调用publicProgress方法来更新任务进度，publicProgress会调用onProgressUpdate方法。
         @Override
         protected String doInBackground(String... strings) {
-            this.cameraAddress=strings[0];
-            this.capture=new FFmpegFrameGrabber(cameraAddress);
-            try
-            {
+            this.cameraAddress = strings[0];
+            this.capture = new FFmpegFrameGrabber(cameraAddress);
+            try {
                 capture.start();
-                this.rate=capture.getFrameRate();
-            }
-            catch (FrameGrabber.Exception e)
-            {
+                this.rate = capture.getFrameRate();
+            } catch (FrameGrabber.Exception e) {
                 return "摄像头链接失败";
             }
-            while (true)
-            {
-                if(isCancelled())
-                {
+            while (true) {
+                if (isCancelled()) {
                     //任务被取消掉
                     break;
                 }
-                try
-                {
-                    frame=null;
-                    frame=capture.grabFrame();
-                    if(frame==null)
-                    {
+                try {
+                    frame = null;
+                    frame = capture.grabFrame();
+                    if (frame == null) {
                         return "视频源中止";
                     }
-                }
-                catch (FrameGrabber.Exception e)
-                {
+                } catch (FrameGrabber.Exception e) {
                     return "视频源中止";
                 }
 
-                if(isLocalVideo&&eye)
-                {
+                if (isLocalVideo && eye) {
                     //如果是本地视频的左眼
-                    Mat mat=matConverter.convertToMat(frame);
-                    Rect reye_box=new Rect(0,1,mat.cols()/2,mat.rows()-1);
-                    frameMat=new Mat(mat,reye_box);
-                }
-                else if(isLocalVideo&&!eye)
-                {
+                    Mat mat = matConverter.convertToMat(frame);
+                    Rect reye_box = new Rect(0, 1, mat.cols() / 2, mat.rows() - 1);
+                    frameMat = new Mat(mat, reye_box);
+                } else if (isLocalVideo && !eye) {
                     //如果是本地视频的右眼
-                    Mat mat=matConverter.convertToMat(frame);
-                    Rect leye_box=new Rect(mat.cols()/2,1,mat.cols()/2-1,mat.rows()-1);
-                    frameMat=new Mat(mat,leye_box);
-                }
-                else
-                {
+                    Mat mat = matConverter.convertToMat(frame);
+                    Rect leye_box = new Rect(mat.cols() / 2, 1, mat.cols() / 2 - 1, mat.rows() - 1);
+                    frameMat = new Mat(mat, leye_box);
+                } else {
 
-                    if(eye)
-                    {
+                    if (eye) {
                         //网络左眼视频
                         frameMat = matConverter.convertToMat(frame);
-                        frameMat = rotate(frameMat,0 );
-                        frameMat = CropImage(frameMat);//截取矩形
-                        opencv_core.flip(frameMat,frameMat,1);//水平翻转
-
-                    }
-                    else
-                    {
-
-                        //网络右眼视频
-                        frameMat = matConverter.convertToMat(frame);
-                        frameMat = rotate(frameMat,0 );
-                        frameMat = CropImage(frameMat);//截取矩形
-                        opencv_core.flip(frameMat,frameMat,1);//水平翻转
-                    }
-
-                }
-
-                if(isTest)
-                {
-                    this.frameNum++;
-                }
-                ImgProcess pro=new ImgProcess();
-                pro.Start(frameMat,1.8);
-                pro.Process();
-                eyeMat=pro.Outeye();
-                float relativeRotation=0;//圆心相对旋转坐标
-                float relativeX=0;//圆心相对X坐标
-                float relativeY=0;//圆心相对Y坐标
-                boolean isCenter=false;//代表这帧图像是否存在圆心
-                String xSPV=null;//x轴SPV值
-                String ySPV=null;//y轴SPV值
-                String period=null;//时间区间
-                boolean isSPV=false;//代表是否有SPV更新
-                if(isTest)
-                {
-                    //开始测试后进行波形分析
-                    for(Box box:pro.circles())
-                    {
-                        isCenter=true;
-                        //先滤波处理
-                        filter.add(box);
-                        box=filter.get();
-                        //圆心坐标更新
-                        if(preEyeBox==null)
-                        {
-                            preEyeBox=box;
-                        }
-                        if(Tool.distance(box,preEyeBox)>(box.getR()+preEyeBox.getR()/1.5)&&(Math.abs(box.getR()-preEyeBox.getR())>box.getR()/2.0))
+                        //frameMat = rotate(frameMat, 0);
+                        if(frameMat==null)
                         {
                             continue;
                         }
-                        //坐标中心
-                        if(!isEyeCenter)
+                        frameMat = CropImage(frameMat);//截取矩形
+                        opencv_core.flip(frameMat, frameMat, 1);//水平翻转
+
+                    } else {
+                        //网络右眼视频
+                        frameMat = matConverter.convertToMat(frame);
+                        //frameMat = rotate(frameMat, 0);
+                        if(frameMat==null)
                         {
-                            isEyeCenter=true;
+                            continue;
+                        }
+                        frameMat = CropImage(frameMat);//截取矩形
+                        opencv_core.flip(frameMat, frameMat, 1);//水平翻转
+                    }
+
+                }
+
+                if (isTest) {
+                    this.frameNum++;
+                }
+                ImgProcess pro = new ImgProcess();
+                pro.Start(frameMat, 1.8);
+                pro.Process();
+                eyeMat = pro.Outeye();
+                float relativeRotation = 0;//圆心相对旋转坐标
+                float relativeX = 0;//圆心相对X坐标
+                float relativeY = 0;//圆心相对Y坐标
+                boolean isCenter = false;//代表这帧图像是否存在圆心
+                String xSPV = null;//x轴SPV值
+                String ySPV = null;//y轴SPV值
+                String period = null;//时间区间
+                boolean isSPV = false;//代表是否有SPV更新
+                if (isTest) {
+                    //开始测试后进行波形分析
+                    for (Box box : pro.circles()) {
+                        isCenter = true;
+                        //先滤波处理
+                        filter.add(box);
+                        box = filter.get();
+                        //圆心坐标更新
+                        if (preEyeBox == null) {
+                            preEyeBox = box;
+                        }
+                        if (Tool.distance(box, preEyeBox) > (box.getR() + preEyeBox.getR() / 1.5) && (Math.abs(box.getR() - preEyeBox.getR()) > box.getR() / 2.0)) {
+                            continue;
+                        }
+                        //坐标中心
+                        if (!isEyeCenter) {
+                            isEyeCenter = true;
                             eyeCenter.setX(box.getX());
                             eyeCenter.setY(box.getY());
-                        }
-                        else
-                        {
+                        } else {
                             //后续相对坐标是基于第一帧位置
-                            double temp= Math.atan((box.getY()-preEyeBox.getY())/(box.getX()-preEyeBox.getX()));
-                            if(Double.isNaN(temp))
-                            {
-                                temp=0;
+                            double temp = Math.atan((box.getY() - preEyeBox.getY()) / (box.getX() - preEyeBox.getX()));
+                            if (Double.isNaN(temp)) {
+                                temp = 0;
                             }
-                            relativeRotation=(float)temp;
-                            relativeX=(float)(box.getX()-eyeCenter.getX());
-                            relativeY=(float)(box.getY()-eyeCenter.getY());
+                            relativeRotation = (float) temp;
+                            relativeX = (float) (box.getX() - eyeCenter.getX());
+                            relativeY = (float) (box.getY() - eyeCenter.getY());
                             //添加参数
                             calculate.addEyeX(relativeX);
                             calculate.addEyeY(relativeY);
                         }
-                        preEyeBox=box;
+                        preEyeBox = box;
                     }
-                    if((this.frameNum%this.rate==0)&&(this.frameNum!=0))
-                    {
+                    if ((this.frameNum % this.rate == 0) && (this.frameNum != 0)) {
                         //进行计算
-                        isSPV=true;
+                        isSPV = true;
                         this.secondTime++;
                         calculate.processEyeX(secondTime);
                         calculate.processEyeY(secondTime);
-                        double realSPVX=calculate.getRealTimeSPVX(secondTime);
-                        double maxSPVX=calculate.getMaxSPVX();
-                        double realSPVY=calculate.getRealTimeSPVY(secondTime);
-                        double maxSPVY=calculate.getMaxSPVY();
-                        int maxSecond=calculate.getHighTidePeriod();
-                        period=getPeriod(maxSecond);
-                        xSPV=MergeRealtimeAndMax(df.format(realSPVX),df.format(maxSPVX));
-                        ySPV=MergeRealtimeAndMax(df.format(realSPVY),df.format(maxSPVY));
+                        double realSPVX = calculate.getRealTimeSPVX(secondTime);
+                        double maxSPVX = calculate.getMaxSPVX();
+                        double realSPVY = calculate.getRealTimeSPVY(secondTime);
+                        double maxSPVY = calculate.getMaxSPVY();
+                        int maxSecond = calculate.getHighTidePeriod();
+                        period = getPeriod(maxSecond);
+                        xSPV = MergeRealtimeAndMax(df.format(realSPVX), df.format(maxSPVX));
+                        ySPV = MergeRealtimeAndMax(df.format(realSPVY), df.format(maxSPVY));
                     }
                 }
-                publishProgress(eyeMat,isCenter,relativeRotation,relativeX,relativeY,isSPV,xSPV,ySPV,period);
+                publishProgress(eyeMat, isCenter, relativeRotation, relativeX, relativeY, isSPV, xSPV, ySPV, period);
             }
             return "视频播放结束";
         }
+
         //此方法在主线程中执行，values的类型就是AsyncTask传入的第二个参数类型
         @Override
         protected void onProgressUpdate(Object... values) {
-            if(isCancelled())
-            {
+            if (isCancelled()) {
                 return;
             }
             //眼睛图像显示
-            mat_display=(Mat)values[0];
-            if(mat_display==null)
-            {
+            mat_display = (Mat) values[0];
+            if (mat_display == null) {
                 return;
             }
-            frame_display=matConverter.convert(mat_display);
-            bitmap_display=bitmapConverter.convert(frame_display);
-            if(eye)
-            {
+            frame_display = matConverter.convert(mat_display);
+            bitmap_display = bitmapConverter.convert(frame_display);
+            if (eye) {
                 this.activity.imageView_leye.setImageBitmap(bitmap_display);
-            }
-            else
-            {
+            } else {
                 this.activity.imageView_reye.setImageBitmap(bitmap_display);
             }
             //波形图绘制
-            boolean isCenter=(Boolean)values[1];
-            int flag=eye?0:1;
-            if(this.isTest&&isCenter)
-            {
+            boolean isCenter = (Boolean) values[1];
+            int flag = eye ? 0 : 1;
+            if (this.isTest && isCenter) {
                 //存在圆心的话，绘制波形图
-                float relativeRotation=(float)values[2];
-                float relativeX=(float)values[3];
-                float relativeY=(float)values[4];
-                addEntey(chart_rotation,frameNum/(float)rate,relativeRotation,flag);
-                addEntey(chart_x,frameNum/(float)rate,relativeX,flag);
-                addEntey(chart_y,frameNum/(float)rate,relativeY,flag);
+                float relativeRotation = (float) values[2];
+                float relativeX = (float) values[3];
+                float relativeY = (float) values[4];
+                addEntey(chart_rotation, frameNum / (float) rate, relativeRotation, flag);
+                addEntey(chart_x, frameNum / (float) rate, relativeX, flag);
+                addEntey(chart_y, frameNum / (float) rate, relativeY, flag);
                 //眼震参数计算
                 //calculate.addEyeX(relativeX);
                 //calculate.addEyeY(relativeY);
             }
             //眼震参数更新
-            boolean isSPV=(Boolean)values[5];
-            if(this.isTest&&isSPV) {
+            boolean isSPV = (Boolean) values[5];
+            if (this.isTest && isSPV) {
                 //可以更新眼震参数
                 String xSPV = (String) values[6];
                 String ySPV = (String) values[7];
@@ -814,9 +774,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     LeyeXRealtimeAndMaxSPV.setText(xSPV);
                     LeyeYRealtimeAndMaxSPV.setText(ySPV);
                     LeyeHighperiod.setText(period);
-                }
-                else
-                {
+                } else {
                     //右眼
                     ReyeXRealtimeAndMaxSPV.setText(xSPV);
                     ReyeYRealtimeAndMaxSPV.setText(ySPV);
@@ -854,18 +812,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
         //清除波形
-        private void clearEntey(LineChart chart)
-        {
-            LineData oldData=chart.getData();
+        private void clearEntey(LineChart chart) {
+            LineData oldData = chart.getData();
             oldData.clearValues();
             ArrayList<ILineDataSet> dataSets = new ArrayList<ILineDataSet>();
-            for(int i=0;i<2;++i)
-            {
-                ArrayList<Entry> values=new ArrayList<>();
-                values.add(new Entry(0,0));//初始设置为(0,0)坐标
+            for (int i = 0; i < 2; ++i) {
+                ArrayList<Entry> values = new ArrayList<>();
+                values.add(new Entry(0, 0));//初始设置为(0,0)坐标
 
-                LineDataSet set=new LineDataSet(values,i==0?"左眼":"右眼");
-                set.setMode(set.getMode()==LineDataSet.Mode.CUBIC_BEZIER?LineDataSet.Mode.LINEAR:LineDataSet.Mode.CUBIC_BEZIER);//设置为平滑曲线
+                LineDataSet set = new LineDataSet(values, i == 0 ? "左眼" : "右眼");
+                set.setMode(set.getMode() == LineDataSet.Mode.CUBIC_BEZIER ? LineDataSet.Mode.LINEAR : LineDataSet.Mode.CUBIC_BEZIER);//设置为平滑曲线
                 set.setDrawCircles(false);//取消显示坐标点圆圈
                 set.setDrawValues(false);//取消显示坐标值
                 set.setCubicIntensity(0.15f);//设置曲线曲率
@@ -873,43 +829,56 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 set.setColor(colors[i]);//设置线的颜色
                 dataSets.add(set);
             }
-            LineData data=new LineData(dataSets);
+            LineData data = new LineData(dataSets);
             chart.setData(data);
             chart.notifyDataSetChanged();
         }
 
         //绘制波形
-        private void addEntey(LineChart add_chart,float add_x,float add_y,int add_flag)
-        {
+        private void addEntey(LineChart add_chart, float add_x, float add_y, int add_flag) {
             //一定保证运行在UI主线程下
             //flag:0 左眼; flag:1 右眼
-            LineData data=add_chart.getData();
-            Entry entry=new Entry(add_x,add_y);
-            data.addEntry(entry,add_flag);
+            LineData data = add_chart.getData();
+            Entry entry = new Entry(add_x, add_y);
+            data.addEntry(entry, add_flag);
             add_chart.notifyDataSetChanged();
             add_chart.invalidate();
+
+            //波形图自动往左移动，不堆在一起
+            //设置在曲线图中显示的最大数量
+            add_chart.setVisibleXRangeMaximum(10);
+            //移到某个位置
+            add_chart.moveViewToX(data.getEntryCount() - 5);
         }
 
         //2018/09/29 增加图像旋转功能
         private Mat rotate(Mat image, double angle) {
-            opencv_core.IplImage Image = new opencv_core.IplImage(image);
-            opencv_core.IplImage copy = cvCloneImage(Image);
-            opencv_core.IplImage rotatedImage = cvCreateImage(cvGetSize(copy), copy.depth(), copy.nChannels());
-            //Define Rotational Matrix
-            opencv_core.CvMat mapMatrix = cvCreateMat(2, 3, CV_32FC1);
-            //Define Mid Point
-            opencv_core.CvPoint2D32f centerPoint = new opencv_core.CvPoint2D32f();
-            centerPoint.x(copy.width() / 2);
-            centerPoint.y(copy.height() / 2);
-            //Get Rotational Matrix
-            cv2DRotationMatrix(centerPoint, angle, 1.0, mapMatrix);
-            //Rotate the Image
-            cvWarpAffine(copy, rotatedImage, mapMatrix, CV_INTER_CUBIC + CV_WARP_FILL_OUTLIERS, cvScalarAll(170));
-            cvReleaseImage(copy);
-            cvReleaseMat(mapMatrix);
-            Mat rotateImage = new Mat(rotatedImage);
-            return rotateImage;
+            try {
+                opencv_core.IplImage Image = new opencv_core.IplImage(image);
+                opencv_core.IplImage copy = cvCloneImage(Image);
+                opencv_core.IplImage rotatedImage = cvCreateImage(cvGetSize(copy), copy.depth(), copy.nChannels());
+                //Define Rotational Matrix
+                opencv_core.CvMat mapMatrix = cvCreateMat(2, 3, CV_32FC1);
+                //Define Mid Point
+                opencv_core.CvPoint2D32f centerPoint = new opencv_core.CvPoint2D32f();
+                centerPoint.x(copy.width() / 2);
+                centerPoint.y(copy.height() / 2);
+                //Get Rotational Matrix
+                cv2DRotationMatrix(centerPoint, angle, 1.0, mapMatrix);
+                //Rotate the Image
+                cvWarpAffine(copy, rotatedImage, mapMatrix, CV_INTER_CUBIC + CV_WARP_FILL_OUTLIERS, cvScalarAll(170));
+                cvReleaseImage(copy);
+                cvReleaseMat(mapMatrix);
+                Mat rotateImage = new Mat(rotatedImage);
+                return rotateImage;
+            } catch (RuntimeException e) {
+                e.printStackTrace();
+                return null;
+            } catch (OutOfMemoryError e) {
+                return null;
+            }
         }
+
 
         /**
          * 截取图像
