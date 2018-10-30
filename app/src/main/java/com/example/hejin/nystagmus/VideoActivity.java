@@ -1,11 +1,15 @@
 package com.example.hejin.nystagmus;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.media.MediaMetadataRetriever;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -276,6 +280,10 @@ public class VideoActivity extends AppCompatActivity {
         Vector<String> vector=new Vector<>();
         File file=new File(fileAbsolutePath);
         File[] subFile=file.listFiles();
+
+        //getPermission();//加入运行时检查
+
+
         for(int iFileLength=0;iFileLength<subFile.length;iFileLength++)
         {
             //判断是否为文件夹
@@ -299,6 +307,19 @@ public class VideoActivity extends AppCompatActivity {
         }
         return vector;
     }
+
+    void getPermission()
+    {
+        int permissionCheck1 = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.READ_EXTERNAL_STORAGE);
+        int permissionCheck2 = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if (permissionCheck1 != PackageManager.PERMISSION_GRANTED || permissionCheck2 != PackageManager.PERMISSION_GRANTED)
+        {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE},
+                    124);
+        }
+    }
+
     private String getVideoDuration(String src)
     {
         //讲毫秒形式转为正常时间格式

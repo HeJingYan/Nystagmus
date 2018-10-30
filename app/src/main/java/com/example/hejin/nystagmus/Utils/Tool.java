@@ -13,12 +13,12 @@ import java.text.SimpleDateFormat;
  */
 
 public class Tool {
-    public static final int ALL_EYE=5;//摄像头双眼都在
+    public static final int ALL_EYE=3;//摄像头双眼都在
     public static final int NOT_LEYE=2;//摄像头没有左眼
-    public static final int NOT_REYE=0;//摄像头没有右眼
-    public static final int NOT_ALLEYE=8;//摄像头双眼都没有
-    public static final int VEDIO_EYE=1;//本地视频双眼都在
-    public static final int VEDIO_ONLY_EYE=6;//本地视频单眼
+    public static final int NOT_REYE=1;//摄像头没有右眼
+    public static final int NOT_ALLEYE=0;//摄像头双眼都没有
+    public static final int VEDIO_EYE=5;//本地视频双眼都在
+    public static final int VEDIO_ONLY_EYE=4;//本地视频单眼
 
     public static String AddressLeftEye="http://192.168.43.231:8090/?action=stream?dummy=param.mjpg";//左眼网络地址
     public static String AddressRightEye="http://192.168.43.127:8090/?action=stream?dummy=param.mjpg";//右眼网络地址

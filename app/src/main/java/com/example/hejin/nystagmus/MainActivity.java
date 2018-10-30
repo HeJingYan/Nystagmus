@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -38,18 +39,26 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 
+import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacpp.opencv_core.Mat;
 import org.bytedeco.javacpp.opencv_core.Rect;
+import org.bytedeco.javacpp.opencv_videoio;
 import org.bytedeco.javacv.AndroidFrameConverter;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameGrabber;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 
+import java.io.File;
 import java.lang.ref.WeakReference;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import static com.example.hejin.nystagmus.Utils.Calculate.MergeRealtimeAndMax;
 import static com.example.hejin.nystagmus.Utils.Calculate.getPeriod;
@@ -103,6 +112,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private VideoTask task_leye;//左眼任务
     private VideoTask task_reye;//右眼任务
+
+    //图像保存队列
+    private BlockingQueue<Mat> leyeImageQueue = new ArrayBlockingQueue<>(100);
+    private BlockingQueue<Mat> reyeImageQueue = new ArrayBlockingQueue<>(100);
+    private static volatile boolean isSave = false;
+    private static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+    private int saveFrameWidth = 160;
+    private int saveFrameHeigh = 72;
+    private int saveFPS = 50;
 
     @Override//活动启动时第一个启动的函数，用于定义并初始化部分参数
     protected void onCreate(Bundle savedInstanceState) {
@@ -223,6 +241,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Tool.AddressRightEye=pref.getString("RightCameraAddress",Tool.AddressRightEye);//保存右眼摄像头地址
         Tool.RecognitionGrayValue=pref.getInt("GrayValue",Tool.RecognitionGrayValue);//保存灰度化阈值
 
+        File file = new File(Tool.VideoStoragePath);
+        if(!file.exists()||!file.mkdir())
+        {
+            T.showShort(this,"视频存储功能受限");
+        }
         L.d("项目打开");
     }
 
@@ -340,14 +363,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void startPlay()//开始测试
     {
+        //只有双眼视频同时打开才可以保存
+        isSave = false;
         if(task_leye!=null&&task_leye.getStatus()== AsyncTask.Status.RUNNING)
         {
             task_leye.isTest=true;
+            isSave = true;
         }
+
         if(task_reye!=null&&task_reye.getStatus()== AsyncTask.Status.RUNNING)
         {
             task_reye.isTest=true;
         }
+        else
+        {
+            isSave = false;
+        }
+
+        new Thread(new saveVideo(this)).start();
     }
 
     private void stopPlay()//停止测试
@@ -359,6 +392,89 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if(task_reye!=null&&task_reye.getStatus()== AsyncTask.Status.RUNNING)
         {
             task_reye.cancel(true);
+        }
+    }
+
+    private class saveVideo implements Runnable{
+        private MainActivity context;
+        public saveVideo(MainActivity context)
+        {
+            this.context=context;
+        }
+        @Override
+        public void run(){
+            String date=dateFormat.format(new Date());
+            
+            String savePath = Tool.VideoStoragePath + "/" + date + ".avi";
+            opencv_videoio.VideoWriter videoWriter = new opencv_videoio.VideoWriter();
+            videoWriter.open(savePath,opencv_videoio.CV_FOURCC((byte)'M',(byte)'J',(byte)'P',(byte)'G'),saveFPS,new opencv_core.Size(saveFrameWidth,saveFrameHeigh),true);
+            try
+            {
+                while (isSave)
+                {
+                    Mat leye=leyeImageQueue.poll(1, TimeUnit.SECONDS);
+                    Mat reye=reyeImageQueue.poll(1, TimeUnit.SECONDS);
+                    if(leye==null||reye==null||leye.isNull()||reye.isNull()||leye.rows()==0||reye.rows()==0)
+                    {
+                        continue;
+                    }
+                    Mat merge=merge(leye,reye);
+                    if(!videoWriter.isOpened())
+                    {
+                        break;
+                    }
+                    if(merge==null||merge.isNull()||merge.cols()!=saveFrameWidth||merge.rows()!=saveFrameHeigh)
+                    {
+                        continue;
+                    }
+
+                    videoWriter.write(merge);
+                }
+            }
+            catch (InterruptedException e)
+            {
+                isSave=false;
+                e.printStackTrace();
+            }
+            finally {
+                videoWriter.release();
+                File file=new File(savePath);
+                if(file.exists())
+                {
+                    Intent intent=new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                    intent.setData(Uri.fromFile(file));
+                    context.sendBroadcast(intent);
+                    context.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            T.showShort(context,"视频保存成功");
+                        }
+                    });
+
+                }
+                else
+                {
+                    context.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            T.showShort(context,"视频保存失败");
+                        }
+                    });
+                }
+            }
+        }
+
+        //合成图像
+        private Mat merge(Mat leye,Mat reye)
+        {
+            int totalCols=leye.cols()+reye.cols();
+            int rows=Math.max(leye.rows(),reye.rows());
+            Mat dst=new Mat(rows,totalCols,leye.type());
+            Mat submat=dst.colRange(0,leye.cols());
+            leye.copyTo(submat);
+            submat=dst.colRange(leye.cols(),totalCols);
+            reye.copyTo(submat);
+            return dst;
         }
     }
 
@@ -438,6 +554,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     task_reye.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,VideoPath);
                     task_leye.isTest=true;
                     task_reye.isTest=true;
+
+                    //isSave = true;//本地视频保存
+                    //new Thread(new saveVideo(this)).start();
+
+
                 }
                 break;
             }
@@ -468,7 +589,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         private boolean isLocalVideo;
         //用于图像接收处理
         private Frame frame;
-        private Mat frameMat;
+        private Mat frameMat,frameMat1,frameMat2,frameMat4;
         private Mat eyeMat;
         //视频相关参数
         private int frameNum = 0;//帧数
@@ -542,6 +663,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         private void stopVideo()//视频结束流程
         {
             this.isTest = false;
+            isSave = false;
             //诊断结果
             boolean diagnosticResult = calculate.judgeDiagnosis();//诊断结果
             String preResultStr = DiagnosticResult.getText().toString();
@@ -614,7 +736,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
                 try {
                     frame = null;
-                    frame = capture.grabFrame();
+                    frame = capture.grabFrame();//获取视频
+
                     if (frame == null) {
                         return "视频源中止";
                     }
@@ -622,17 +745,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     return "视频源中止";
                 }
 
-                if (isLocalVideo && eye) {
+                Mat eyeImage = new Mat();
+                if (isLocalVideo && eye)
+                {
                     //如果是本地视频的左眼
                     Mat mat = matConverter.convertToMat(frame);
-                    Rect reye_box = new Rect(0, 1, mat.cols() / 2, mat.rows() - 1);
+                    Rect reye_box = new Rect(0, 0, mat.cols() / 2, mat.rows());
                     frameMat = new Mat(mat, reye_box);
-                } else if (isLocalVideo && !eye) {
+                }
+                else if (isLocalVideo && !eye)
+                {
                     //如果是本地视频的右眼
                     Mat mat = matConverter.convertToMat(frame);
-                    Rect leye_box = new Rect(mat.cols() / 2, 1, mat.cols() / 2 - 1, mat.rows() - 1);
+                    Rect leye_box = new Rect(mat.cols() / 2, 0, mat.cols() / 2 , mat.rows());
                     frameMat = new Mat(mat, leye_box);
-                } else {
+                }
+                else
+                {
 
                     if (eye) {
                         //网络左眼视频
@@ -642,8 +771,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         {
                             continue;
                         }
-                        frameMat = CropImage(frameMat);//截取矩形
-                        opencv_core.flip(frameMat, frameMat, 1);//水平翻转
+                        frameMat1 = cropImage(frameMat);//截取矩形
+                        opencv_core.flip(frameMat1, frameMat, 1);//水平翻转
 
                     } else {
                         //网络右眼视频
@@ -653,15 +782,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         {
                             continue;
                         }
-                        frameMat = CropImage(frameMat);//截取矩形
-                        opencv_core.flip(frameMat, frameMat, 1);//水平翻转
+                        frameMat4 = cropImage(frameMat);//截取矩形
+                        opencv_core.flip(frameMat4, frameMat, 1);//水平翻转
                     }
 
                 }
 
                 if (isTest) {
                     this.frameNum++;
+                    eyeImage=new Mat(frameMat.clone());//保存截图之后的图像
                 }
+
                 ImgProcess pro = new ImgProcess();
                 pro.Start(frameMat, 1.8);
                 pro.Process();
@@ -724,7 +855,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         ySPV = MergeRealtimeAndMax(df.format(realSPVY), df.format(maxSPVY));
                     }
                 }
-                publishProgress(eyeMat, isCenter, relativeRotation, relativeX, relativeY, isSPV, xSPV, ySPV, period);
+                publishProgress(eyeMat, isCenter, relativeRotation, relativeX, relativeY, isSPV, xSPV, ySPV, period,eyeImage);
             }
             return "视频播放结束";
         }
@@ -781,34 +912,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     ReyeHighperiod.setText(period);
                 }
             }
-            /*
-            if(this.isTest&&(this.frameNum%this.rate==0)&&(this.frameNum!=0))
+
+            if(this.isTest&&isSave&&values[9]!=null)
             {
-                this.secondTime++;
-                calculate.processEyeX(secondTime);
-                calculate.processEyeY(secondTime);
-                double realSPVX=calculate.getRealTimeSPVX(secondTime);
-                double maxSPVX=calculate.getMaxSPVX();
-                double realSPVY=calculate.getRealTimeSPVY(secondTime);
-                double maxSPVY=calculate.getMaxSPVY();
-                int maxSecond=calculate.getHighTidePeriod();
-                String period=getPeriod(maxSecond);
-                if(eye)
+                Mat eyeImage=new Mat((Mat)values[9]);
+                if(eyeImage.isNull()||eyeImage.cols()==0)
                 {
-                    //左眼
-                    LeyeXRealtimeAndMaxSPV.setText(MergeRealtimeAndMax(df.format(realSPVX),df.format(maxSPVX)));//保留两位小数点
-                    LeyeYRealtimeAndMaxSPV.setText(MergeRealtimeAndMax(df.format(realSPVY),df.format(maxSPVY)));
-                    LeyeHighperiod.setText(period);
+                    return;
                 }
-                else
+
+                if(eye==true)
                 {
-                    //右眼
-                    ReyeXRealtimeAndMaxSPV.setText(MergeRealtimeAndMax(df.format(realSPVX),df.format(maxSPVX)));//保留两位小数点
-                    ReyeYRealtimeAndMaxSPV.setText(MergeRealtimeAndMax(df.format(realSPVY),df.format(maxSPVY)));
-                    ReyeHighperiod.setText(period);
+                    leyeImageQueue.offer(eyeImage);
                 }
+
+                if (eye==false)
+                {
+                    reyeImageQueue.offer(eyeImage);
+                }
+
+
             }
-            */
         }
 
         //清除波形
@@ -881,16 +1005,52 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
         /**
-         * 截取图像
+         * 截取图像c
          * @param image
          * @return
          */
-        private Mat CropImage(Mat image)
+        private Mat cropImage(Mat image)
         {
-            opencv_core.Rect box = new opencv_core.Rect(image.cols()/4, image.rows()/5, image.cols()/2, image.rows()*3/5);
+            Rect box = new Rect(image.cols()/4, image.rows()/5, image.cols()/2, image.rows()*3/5);
             return new Mat(image,box);
         }
 
+        private void contrastStretch(Mat image)
+        {
+            UByteIndexer indexer=image.createIndexer();
+            int[] pixMax={0,0,0};
+            int[] pixMin={255,255,255};
+            for(int y=0;y<image.rows();y++)
+            {
+                for(int x=0;x<image.cols();x++)
+                {
+                    for(int channel=0;channel<image.channels();channel++)
+                    {
+                        int temp=indexer.get(y,x,channel);
+                        if(pixMax[channel]<temp)
+                        {
+                            pixMax[channel]=temp;
+                        }
+                        if(pixMin[channel]>temp)
+                        {
+                            pixMin[channel]=temp;
+                        }
+                    }
+                }
+            }
+            for(int y=0;y<image.rows();y++)
+            {
+                for(int x=0;x<image.cols();x++)
+                {
+                    for(int channel=0;channel<image.channels();channel++)
+                    {
+                        int temp=indexer.get(y,x,channel);
+                        int pix=(temp-pixMin[channel])*255/(pixMax[channel]-pixMin[channel]);
+                        indexer.put(y,x,channel,pix);
+                    }
+                }
+            }
+        }
     }
 
 }
