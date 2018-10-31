@@ -241,11 +241,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Tool.AddressRightEye=pref.getString("RightCameraAddress",Tool.AddressRightEye);//保存右眼摄像头地址
         Tool.RecognitionGrayValue=pref.getInt("GrayValue",Tool.RecognitionGrayValue);//保存灰度化阈值
 
-        File file = new File(Tool.VideoStoragePath);
+        if(ContextCompat.checkSelfPermission(MainActivity.this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED)
+        {
+            ActivityCompat.requestPermissions(MainActivity.this,new String []{android.Manifest.permission.WRITE_EXTERNAL_STORAGE},Storage_RequestCode);
+        }
+        
+        /*File file = new File(Tool.VideoStoragePath);
         if(!file.exists()||!file.mkdir())
         {
             T.showShort(this,"视频存储功能受限");
-        }
+        }*/
         L.d("项目打开");
     }
 
@@ -311,7 +316,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if(grantResults.length>0&&grantResults[0]== PackageManager.PERMISSION_GRANTED)
                 {
                     /*申请权限后的事情*/
-                    openVideo();
+                    //openVideo();
                 }
                 else
                 {

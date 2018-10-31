@@ -1,15 +1,11 @@
 package com.example.hejin.nystagmus;
 
-import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.media.MediaMetadataRetriever;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -54,7 +50,7 @@ public class VideoActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video);
 
-        if(Build.VERSION.SDK_INT>= Build.VERSION_CODES.LOLLIPOP)
+        if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.LOLLIPOP)
         {
             //大于安卓5.0即API21版本可用
             //导航栏颜色与状态栏统一
@@ -174,7 +170,7 @@ public class VideoActivity extends AppCompatActivity {
         adapter=new VideoInfoAdapter(this,videoInfoList);
         adapter.setOnItemOnClickListener(new VideoInfoAdapter.OnItemOnClickListener() {
             @Override
-            public void onItemOnClick(View view, int pos)
+            public void onItemOnClick(View view,int pos)
             {
                 //短暂按监听
                 //T.showShort(VideoActivity.this,"短");
@@ -182,7 +178,7 @@ public class VideoActivity extends AppCompatActivity {
                 hideInputMethod(VideoActivity.this,getCurrentFocus());//让软键盘隐藏
             }
             @Override
-            public void onItemLongOnClick(View view, int pos)
+            public void onItemLongOnClick(View view,int pos)
             {
                 //长按监听
                 //T.showShort(VideoActivity.this,"长");
@@ -200,7 +196,7 @@ public class VideoActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.video_menu,menu);
         return true;
     }
-    private void showPopMenu(View view, final int pos)
+    private void showPopMenu(View view,final int pos)
     {
         PopupMenu popupMenu=new PopupMenu(this,view);
         popupMenu.getMenuInflater().inflate(R.menu.video_popup_menu,popupMenu.getMenu());
@@ -280,10 +276,6 @@ public class VideoActivity extends AppCompatActivity {
         Vector<String> vector=new Vector<>();
         File file=new File(fileAbsolutePath);
         File[] subFile=file.listFiles();
-
-        //getPermission();//加入运行时检查
-
-
         for(int iFileLength=0;iFileLength<subFile.length;iFileLength++)
         {
             //判断是否为文件夹
@@ -292,7 +284,7 @@ public class VideoActivity extends AppCompatActivity {
                 //不是文件夹，则是文件
                 String filename=subFile[iFileLength].getName();
                 //判断是否为MP4结尾
-                if(filename.trim().toLowerCase().endsWith(".mp4"))
+                if(filename.trim().toLowerCase().endsWith(".mp4")||filename.trim().toLowerCase().endsWith(".avi"))
                 {
                     //是MP4文件
                     //则判断大小，小于100KB的文件则忽略
@@ -307,30 +299,17 @@ public class VideoActivity extends AppCompatActivity {
         }
         return vector;
     }
-
-    void getPermission()
-    {
-        int permissionCheck1 = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.READ_EXTERNAL_STORAGE);
-        int permissionCheck2 = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        if (permissionCheck1 != PackageManager.PERMISSION_GRANTED || permissionCheck2 != PackageManager.PERMISSION_GRANTED)
-        {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE},
-                    124);
-        }
-    }
-
     private String getVideoDuration(String src)
     {
         //讲毫秒形式转为正常时间格式
-        long time= Long.parseLong(src);
+        long time=Long.parseLong(src);
         Date date=new Date(time);
         int second=date.getSeconds();//获取秒
         int minute=date.getMinutes();//获取分钟
         int hour=date.getHours()-8;//获取小时，需要减去默认的8小时
-        String sec= String.valueOf(second);
-        String min= String.valueOf(minute);
-        String h= String.valueOf(hour);
+        String sec=String.valueOf(second);
+        String min=String.valueOf(minute);
+        String h=String.valueOf(hour);
         return h+":"+min+":"+sec;
     }
     private void showInputDialog(final int pos)
@@ -354,7 +333,7 @@ public class VideoActivity extends AppCompatActivity {
             }
         }).setNegativeButton("取消",null).show();
     }
-    private Boolean hideInputMethod(Context context, View v)
+    private Boolean hideInputMethod(Context context,View v)
     {
         InputMethodManager imm = (InputMethodManager) context
                 .getSystemService(Context.INPUT_METHOD_SERVICE);
