@@ -107,12 +107,12 @@ public class VideoActivity extends AppCompatActivity {
                 //文本变化后
             }
         });
-        File file=new File(Tool.VideoStoragePath);
+        File file=new File(Tool.StorageVideoPath);
         if(file.exists())
         {
             if(!file.isDirectory())
             {
-                deleteFile(Tool.VideoStoragePath);
+                deleteFile(Tool.StorageVideoPath);
                 if(file.delete())
                 {
                     L.d("NystagmusMovies文件删除成功");
@@ -257,10 +257,10 @@ public class VideoActivity extends AppCompatActivity {
     }
     private void loadVideoList()
     {
-        Vector<String> vecName=getVideoFileName(Tool.VideoStoragePath);
+        Vector<String> vecName=getVideoFileName(Tool.StorageVideoPath);
         for(String name:vecName)
         {
-            String absolutePath=Tool.VideoStoragePath+"/"+name;
+            String absolutePath=Tool.StorageVideoPath+"/"+name;
 
             MediaMetadataRetriever retriever=new MediaMetadataRetriever();
             retriever.setDataSource(absolutePath);
