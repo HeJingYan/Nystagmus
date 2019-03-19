@@ -920,7 +920,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     //开始测试后进行波形分析
                     for(Box box:pro.circles())
                     {
-                        Point point=new Point(eyeMat.cols()-(int)box.getX(),(int)box.getY());
+                        Point point=new Point((int)box.getX(),(int)box.getY());
                         drawCross(eyeMat,point,new Scalar(255,255,255,0),1);
                         //drawText(eyeMat,String.valueOf(frameNum),new Scalar(255,255,255,0));
                         isCenter=true;
