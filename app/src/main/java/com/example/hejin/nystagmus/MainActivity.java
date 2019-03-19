@@ -109,7 +109,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private BlockingQueue<Mat> leyeDisplayImageQueue=new ArrayBlockingQueue<>(100);
     private BlockingQueue<Mat> reyeDisplayImageQueue=new ArrayBlockingQueue<>(100);
     private DisplayTask task_display=null;//显示任务
-    //private static volatile boolean isDisplay=false;
+    private static volatile boolean isDisplay=false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -601,12 +601,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             this.activity=mActivity.get();
         }
 
+        @Override
+        protected void onPreExecute() {
+            leyeDisplayImageQueue=new ArrayBlockingQueue<>(100);
+            reyeDisplayImageQueue=new ArrayBlockingQueue<>(100);
+            isDisplay=true;
+        }
 
         @Override
         protected void onPostExecute(String s) {
             T.showShort(this.activity,s);
-            //leyeDisplayImageQueue.clear();
-            //reyeDisplayImageQueue.clear();
+            leyeDisplayImageQueue.clear();
+            reyeDisplayImageQueue.clear();
         }
 
         @Override
@@ -633,7 +639,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         @Override
         protected String doInBackground(String... strings) {
-            while (true)
+            while (isDisplay)
             {
                 if(isCancelled())
                 {
@@ -642,8 +648,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
                 try
                 {
-                    Mat leye=leyeDisplayImageQueue.poll(200,TimeUnit.SECONDS);
-                    Mat reye=reyeDisplayImageQueue.poll(200,TimeUnit.SECONDS);
+                    Mat leye=leyeDisplayImageQueue.poll(3,TimeUnit.SECONDS);
+                    Mat reye=reyeDisplayImageQueue.poll(3,TimeUnit.SECONDS);
 
                     boolean Flag_leye=!(leye==null||leye.isNull()||leye.rows()==0);
                     boolean Flag_reye=!(reye==null||reye.isNull()||reye.rows()==0);
@@ -759,6 +765,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             //停止显示
             this.isTest=false;
             isSave=false;
+            isDisplay=false;
         }
 
         private void stopVideo()//视频结束流程
